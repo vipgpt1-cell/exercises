@@ -16,6 +16,7 @@ import { MAX_AGE, MIN_AGE, updatePerson, updateSettings, type Settings } from '.
  *   hand       right | left   (r | l)       (dominant hand)
  *   sound      1 | 0                        (sound effects)
  *   name       text                         (printed on the report)
+ *   user       opaque id                    (keeps each account's data apart; read in lib/store.ts)
  *
  * Values are saved, so they stay in effect for the next visit too.
  */

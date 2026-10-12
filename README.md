@@ -72,6 +72,7 @@ https://your-host/tests/?lang=uz&age=54&theme=dark#/field/hearing
 | `hand` | `right` · `left` | Main hand, used by the hand tests. |
 | `sound` | `1` · `0` | Sound effects on/off. |
 | `name` | text | Printed on the report (the user can also type it on the Report tab). |
+| `user` | `A–Z a–z 0–9 _ -`, up to 64 | Keeps each TezMed account's results apart on a shared phone. Pass an opaque id (e.g. a hash of the account id), **not** a phone number. See "Saving results". |
 
 Parameters may also be written after the route (`#/field/hearing?lang=uz`). Values are saved, so they stay in effect.
 Without `age`, a test that needs it shows one short "Your age" field before the Start button, and remembers the answer.
@@ -142,6 +143,59 @@ message channel (`window.ReactNativeWebView.postMessage(...)` / `window.flutter_
 mediaPlaybackRequiresUserAction={false}`, and call `webViewRef.current.goBack()` from the Android back handler when
 `canGoBack` is true. **Flutter (`webview_flutter`)**: `JavaScriptMode.unrestricted`, and use `controller.canGoBack()` /
 `goBack()` in `PopScope`.
+
+### Saving results (on the phone, and in TezMed)
+
+**On the phone.** Results and exercise sessions are stored in the WebView's **IndexedDB** (hundreds of MB available).
+Settings and the person's details stay in localStorage. If IndexedDB is missing or doesn't answer within 2.5 s (some
+WebViews on `file://`), the module falls back to localStorage, then to memory (Settings then shows a warning).
+Data saved by earlier versions in localStorage is moved to IndexedDB automatically on first start.
+After the first save the page asks the browser to keep its storage (`navigator.storage.persist()`).
+
+Phone storage is not a safe place for medical history: it is lost when the app is reinstalled, its data is cleared,
+or the phone is changed. **Recommended: send every result to the TezMed server** using the hooks below, and pass
+`user=<id>` so different accounts on one phone never see each other's results.
+
+**WebView settings this needs.** Android: `settings.domStorageEnabled = true` (IndexedDB is on by default).
+iOS `WKWebView` and Flutter/React Native WebViews need nothing extra.
+
+**1. Get each result as it's saved.** Every finished test and exercise is sent to the app:
+
+```kotlin
+// Android (Kotlin)
+class TestsBridge(private val onData: (String) -> Unit) {
+    @JavascriptInterface fun onTestResult(json: String) = onData(json)   // upload to the TezMed API
+    // saveFile(...) from "Saving files" above can live in the same class
+}
+webView.addJavascriptInterface(TestsBridge { json -> api.uploadTestResult(json) }, "AppBridge")
+```
+
+```swift
+// iOS (Swift)
+config.userContentController.add(self, name: "testResult")
+func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
+    if m.name == "testResult", let body = m.body as? [String: Any] { api.uploadTestResult(body) }
+}
+```
+
+The message is `{ "app": "tezmed-tests", "type": "result" | "exercise", "user": "<user param or null>", "item": {…} }`.
+`item.id` is a unique id, so the server can ignore duplicates. In a browser the same object is also sent as the
+window event `tezmed-tests:saved`.
+
+**2. Read, restore or clear everything.** The page exposes `window.TezMedTests` (fires `tezmed-tests:ready` when set):
+
+| Call | Use |
+|---|---|
+| `TezMedTests.getData()` | Everything for this user (same format as the backup file). For a first upload of results saved before the app listened. |
+| `TezMedTests.importData(data)` | Puts results back, e.g. from the server after the user logs in on a new phone. Returns how many were added; existing ones are skipped. |
+| `TezMedTests.clearData()` | Removes this user's results, sessions and personal details, e.g. on logout. |
+| `TezMedTests.storage` | `"indexeddb"`, `"localstorage"` or `"memory"`. |
+
+```kotlin
+webView.evaluateJavascript("JSON.stringify(TezMedTests.getData())") { json -> api.uploadAll(json) }
+webView.evaluateJavascript("TezMedTests.importData($backupJsonFromServer)", null)
+webView.evaluateJavascript("TezMedTests.clearData()", null)
+```
 
 ---
 
@@ -222,8 +276,9 @@ text is a build error.
 - **New test**: add a module in `src/features/<section>/` and register it in `src/catalog/index.ts`.
 
 ## 6. Privacy
-No network requests while it runs (fonts and audio are bundled). Results and settings are kept in the WebView's
-localStorage for that address. Users can save a backup file and restore it (Report tab), and delete all results in
+No network requests while it runs (fonts and audio are bundled). Results are kept on the phone (IndexedDB, see
+"Saving results"), settings in localStorage, for that address only; nothing leaves the phone unless the host app
+reads it through the hooks above. Users can save a backup file and restore it (Report tab), and delete all results in
 Settings (gear icon on the start page).
 
 Fonts: Inter (SIL Open Font License). Icons: Lucide (ISC). Body map artwork (`src/features/spine/body-back.ts`): from

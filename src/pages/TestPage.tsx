@@ -48,7 +48,7 @@ function Intro({
     <AppLayout tabs={false}>
       <div className={cx('animate-fade-up', fieldById(field)?.accent)}>
         <PageHeader title={info.name} back={`/field/${field}`} />
-        <div className="grid gap-4 md:grid-cols-[1.35fr_1fr]">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.35fr_1fr]">
           <div className="space-y-4">
             {before}
             <Card className="p-5">

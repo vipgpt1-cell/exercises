@@ -209,7 +209,7 @@ export function ReportPage() {
               </button>
             </div>
 
-            <div className="grid gap-3 border-b border-line py-4 sm:grid-cols-[1.4fr_1fr]">
+            <div className="grid grid-cols-1 gap-3 border-b border-line py-4 sm:grid-cols-[1.4fr_1fr]">
               <label className="block">
                 <span className="mb-1 block text-xs font-medium text-muted">
                   {s.nameLabel}

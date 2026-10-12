@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { Lang } from './i18n'
+import { openKV, requestPersistence, type KV } from './db'
+import { notifyHost } from './host'
 
 /* ------------------------------------------------------------------ */
 /* Types                                                                */
@@ -74,6 +76,24 @@ export interface ExerciseLog {
 /* ------------------------------------------------------------------ */
 
 const PREFIX = 'tezmed.tests.v1.'
+
+/**
+ * Data of different people on one phone is kept apart when the host app passes `user=<id>`
+ * in the URL (an opaque id, not a phone number). Settings are shared; the person's details,
+ * results and exercise sessions belong to that user.
+ */
+export function userNamespace(search: string, hash = ''): string {
+  const q = new URLSearchParams(search)
+  const hq = hash.split('?')[1]
+  if (hq) new URLSearchParams(hq).forEach((v, k) => q.set(k, v))
+  const id = (q.get('user') ?? '').trim()
+  return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : ''
+}
+
+const USER = typeof window !== 'undefined' ? userNamespace(window.location.search, window.location.hash) : ''
+const USER_PREFIX = USER ? `u.${USER}.` : ''
+export const currentUser = () => USER || null
+
 const memory = new Map<string, string>()
 
 function read(key: string): string | null {
@@ -138,6 +158,95 @@ function createPersisted<T>(key: string, initial: () => T, merge?: (stored: T) =
   }
 }
 
+/**
+ * Like createPersisted, but stored in IndexedDB (see lib/db.ts). Starts empty;
+ * initStorage() loads it before the app is shown.
+ */
+function createAsyncPersisted<T>(key: string, initial: () => T, merge: (stored: T) => T) {
+  let state: T = initial()
+  let kv: KV | null = null
+  let queue: Promise<void> = Promise.resolve()
+  const listeners = new Set<Listener>()
+  const emit = () => listeners.forEach((l) => l())
+  const fullKey = PREFIX + key
+  const parse = (raw: string | null): T | null => {
+    if (!raw) return null
+    try {
+      return merge(JSON.parse(raw))
+    } catch {
+      return null
+    }
+  }
+  return {
+    get: () => state,
+    set(next: T | ((prev: T) => T)) {
+      state = typeof next === 'function' ? (next as (p: T) => T)(state) : next
+      emit()
+      const value = JSON.stringify(state)
+      // Writes go out in order; a failed write keeps the data in memory and shows a warning in Settings.
+      queue = queue.then(async () => {
+        if (!kv) {
+          memory.set(key, value)
+          return
+        }
+        try {
+          await kv.set(fullKey, value)
+          channel?.postMessage(fullKey)
+        } catch {
+          storageWarning = true
+          memory.set(key, value)
+        }
+      })
+    },
+    subscribe(l: Listener) {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    /** Loads from storage. Moves data saved by older versions out of localStorage. */
+    async load(store: KV) {
+      kv = store
+      let raw = await store.get(fullKey).catch(() => null)
+      if (raw === null && store.kind === 'indexeddb') {
+        const legacy = read(key)
+        if (legacy !== null && parse(legacy) !== null) {
+          try {
+            await store.set(fullKey, legacy)
+            localStorage.removeItem(fullKey)
+          } catch {
+            /* keep it where it is */
+          }
+          raw = legacy
+        }
+      }
+      const v = parse(raw)
+      if (v !== null) {
+        state = v
+        emit()
+      }
+    },
+    /** Re-read after another tab changed it. */
+    async reload() {
+      if (!kv) return
+      const v = parse(await kv.get(fullKey).catch(() => null))
+      if (v !== null) {
+        state = v
+        emit()
+      }
+    },
+    /** Resolves when every pending write has finished. */
+    flush: () => queue,
+    key: fullKey,
+  }
+}
+
+const channel: BroadcastChannel | null = (() => {
+  try {
+    return typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('tezmed-tests') : null
+  } catch {
+    return null
+  }
+})()
+
 function detectLang(): Lang {
   try {
     const langs = navigator.languages?.length ? navigator.languages : [navigator.language]
@@ -176,16 +285,35 @@ const defaultSettings = (): Settings => ({
 const defaultPerson = (): Person => ({ birthYear: null, sex: null, hand: null, name: '' })
 
 export const settingsStore = createPersisted<Settings>('settings', defaultSettings, (s) => ({ ...defaultSettings(), ...s }))
-export const personStore = createPersisted<Person>('person', defaultPerson, (p) => ({ ...defaultPerson(), ...p }))
-export const resultsStore = createPersisted<StoredResult[]>('results', () => [], (r) => (Array.isArray(r) ? r : []))
-export const logsStore = createPersisted<ExerciseLog[]>('exercise-logs', () => [], (r) => (Array.isArray(r) ? r : []))
+export const personStore = createPersisted<Person>(USER_PREFIX + 'person', defaultPerson, (p) => ({ ...defaultPerson(), ...p }))
+export const resultsStore = createAsyncPersisted<StoredResult[]>(USER_PREFIX + 'results', () => [], (r) => (Array.isArray(r) ? r : []))
+export const logsStore = createAsyncPersisted<ExerciseLog[]>(USER_PREFIX + 'exercise-logs', () => [], (r) => (Array.isArray(r) ? r : []))
 
-const all = [settingsStore, personStore, resultsStore, logsStore]
+const syncStores = [settingsStore, personStore]
+const asyncStores = [resultsStore, logsStore]
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    for (const s of all) if (e.key === PREFIX + s.key) s.reload()
+    for (const s of syncStores) if (e.key === PREFIX + s.key) s.reload()
+  })
+  channel?.addEventListener('message', (e) => {
+    for (const s of asyncStores) if (e.data === s.key) void s.reload()
   })
 }
+
+let storageKind: KV['kind'] | null = null
+/** Where results are kept on this device: 'indexeddb', 'localstorage' or 'memory'. */
+export const storageBackend = () => storageKind
+
+/** Loads results and exercise sessions. Call once before showing the app. */
+export async function initStorage() {
+  const kv = await openKV()
+  storageKind = kv.kind
+  if (kv.kind === 'memory') storageWarning = true
+  await Promise.all(asyncStores.map((s) => s.load(kv)))
+}
+
+/** Resolves once everything saved so far has been written. */
+export const flushStorage = () => Promise.all(asyncStores.map((s) => s.flush())).then(() => {})
 
 /* ------------------------------------------------------------------ */
 /* Hooks                                                               */
@@ -217,6 +345,8 @@ export function uid(): string {
 export function saveResult<D>(testId: string, v: number, summary: Summary, data: D): StoredResult<D> {
   const r: StoredResult<D> = { id: uid(), testId, date: new Date().toISOString(), v, summary, data }
   resultsStore.set((list) => [r as StoredResult, ...list].slice(0, MAX_RESULTS))
+  requestPersistence()
+  notifyHost('result', r)
   return r
 }
 
@@ -227,6 +357,8 @@ export function deleteResult(id: string) {
 export function saveLog(log: Omit<ExerciseLog, 'id' | 'date'>) {
   const l: ExerciseLog = { ...log, id: uid(), date: new Date().toISOString() }
   logsStore.set((list) => [l, ...list].slice(0, MAX_LOGS))
+  requestPersistence()
+  notifyHost('exercise', l)
   return l
 }
 

@@ -53,9 +53,16 @@ fayl ilovaga uzatiladi va ilova uni ulashadi yoki saqlaydi. Bo‘lmasa, telefonn
 “Zaxira fayldan tiklash” uchun Android’da `onShowFileChooser` qo‘llab-quvvatlanishi kerak. Batafsil: `README.md`.
 Batafsil misollar (Android, iOS, React Native, Flutter): `README.md`, 1-bo‘lim.
 
-## 4. Dasturchilar uchun
+## 4. Natijalarni saqlash
+- Natijalar telefonda **IndexedDB**da saqlanadi (localStorage’dan ancha katta; eski versiyadagi ma’lumotlar o‘zi ko‘chiriladi). IndexedDB ishlamasa — localStorage’ga o‘tadi.
+- Telefon xotirasi doimiy joy emas: ilova qayta o‘rnatilsa yoki telefon almashtirilsa, natijalar yo‘qoladi. **Tavsiya: har bir natijani TezMed serveriga yuboring.** Har bir yakunlangan test va mashq ilovaga yuboriladi: Android’da `AppBridge.onTestResult(json)`, iOS’da `testResult` handler.
+- Bir telefonda bir nechta akkaunt bo‘lsa, havolaga `user=<id>` qo‘shing (telefon raqami emas, yashirin id). Har bir foydalanuvchining natijalari alohida saqlanadi.
+- Ilova `window.TezMedTests` orqali hammasini o‘qishi (`getData()`), serverdan qaytarishi (`importData()`) va chiqishda o‘chirishi (`clearData()`) mumkin.
+- Batafsil va kod namunalari: `README.md`, “Saving results”.
+
+## 5. Dasturchilar uchun
 ```bash
-cd source
+cd source   # GitHub’da: loyiha papkasining o‘zi
 npm install
 npm run dev            # ishlab chiqish rejimi
 npm test               # unit-testlar
@@ -64,7 +71,7 @@ npm run build:offline  # bitta fayl versiyasi → dist-offline/
 ```
 Node 22.12 yoki yangisi kerak. Matnlar har bir test faylining ichida (UZ/RU/EN).
 
-## 5. Muhim
+## 6. Muhim
 - Bu tibbiy asbob emas — o‘zini tekshirish va kuzatish vositasi.
 - Tovush eshitish testi oddiy quloqchinda taxminiy natija beradi (±10 dB). Eng ishonchlisi — quloqlar orasidagi farq va o‘sha telefon hamda quloqchindagi o‘zgarishlar.
 - O‘zbekcha raqamlarni kompyuter ovozi o‘qiydi; klinik foydalanish uchun studiya yozuvi bilan almashtirish tavsiya etiladi (README, 5-bo‘lim).

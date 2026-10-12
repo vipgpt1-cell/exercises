@@ -69,7 +69,7 @@ export function Home() {
           })}
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-[1.4fr_1fr]">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-[1.4fr_1fr]">
           {/* Latest results */}
           <section>
             <SectionTitle
