@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Tests and exercises for hearing, memory and attention, hands, neck, back and breathing." />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c111c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Testlar va mashqlar</title>
+    <script>
+      // Apply theme and text size before first paint (no flash). URL values from the host app win.
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem('tezmed.tests.v1.settings') || '{}')
+          var q = new URLSearchParams(location.search + '&' + (location.hash.split('?')[1] || ''))
+          if (q.get('theme')) s.theme = q.get('theme') === 'auto' ? 'system' : q.get('theme')
+          if (q.get('text')) s.textSize = q.get('text')
+          if (q.get('lang')) s.lang = q.get('lang').slice(0, 2).toLowerCase()
+          var r = document.documentElement
+          var host = r.getAttribute('data-theme')
+          var sysDark = host === 'dark' || (host !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          var dark = s.theme === 'dark' || ((!s.theme || s.theme === 'system') && sysDark)
+          if (dark) r.classList.add('dark')
+          r.dataset.text = s.textSize || 'normal'
+          if (s.lang) r.lang = s.lang
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>JavaScript is required.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
