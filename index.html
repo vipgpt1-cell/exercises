@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Tests and exercises for hearing, memory and attention, hands, neck, back and breathing." />
     <meta name="format-detection" content="telephone=no" />
-    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0c111c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f7fb" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>Testlar va mashqlar</title>
     <script>
@@ -19,9 +18,9 @@
           if (q.get('text')) s.textSize = q.get('text')
           if (q.get('lang')) s.lang = q.get('lang').slice(0, 2).toLowerCase()
           var r = document.documentElement
+          // Light unless the host's data-theme, the link or the user's setting says dark ("system" follows the phone).
           var host = r.getAttribute('data-theme')
-          var sysDark = host === 'dark' || (host !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
-          var dark = s.theme === 'dark' || ((!s.theme || s.theme === 'system') && sysDark)
+          var dark = host === 'dark' || host === 'light' ? host === 'dark' : s.theme === 'dark' || (s.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
           if (dark) r.classList.add('dark')
           r.dataset.text = s.textSize || 'normal'
           if (s.lang) r.lang = s.lang

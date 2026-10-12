@@ -64,8 +64,8 @@ https://your-host/tests/?lang=uz&age=54&theme=dark#/field/hearing
 
 | Parameter | Values | Effect |
 |---|---|---|
-| `lang` | `uz` · `ru` · `en` | Language. When given, the language switch is hidden in Settings. |
-| `theme` | `light` · `dark` · `system` | Colours. When given, the theme switch is hidden. |
+| `lang` | `uz` · `ru` · `en` | Language. **Default: Uzbek.** When given, the language switch is hidden in Settings. |
+| `theme` | `light` · `dark` · `system` | Colours. **Default: light.** `system` follows the phone. When given, the theme switch is hidden. A `data-theme="dark"`/`"light"` attribute set on `<html>` by the host wins over all of these and can be changed while the page is open. |
 | `text` | `normal` · `large` · `xl` | Text size. |
 | `age` or `birthYear` | `7–100` or e.g. `1972` | Used by the 7 age-normed tests. **If you pass it, users are never asked for their age.** |
 | `sex` | `male` · `female` | Only used by the tone hearing test (age curves differ slightly). |

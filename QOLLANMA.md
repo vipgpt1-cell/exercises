@@ -29,9 +29,9 @@ Ilovadan uzatiladigan sozlamalar (ixtiyoriy):
 ```
 .../tests/?lang=uz&age=54&theme=dark#/field/hearing
 ```
-- `lang` — `uz`, `ru`, `en` (berilsa, til almashtirgich yashiriladi)
+- `lang` — `uz`, `ru`, `en`; **asosiy til — o‘zbekcha** (berilsa, til almashtirgich yashiriladi)
 - `age` yoki `birthYear` — yosh; berilsa, foydalanuvchidan yosh so‘ralmaydi
-- `theme` — `light`, `dark`, `system`; `text` — `normal`, `large`, `xl`
+- `theme` — `light`, `dark`, `system` (telefonga moslashadi); **asosiy rejim — yorug‘ (light)**; `text` — `normal`, `large`, `xl`
 - `sex` — `male` / `female`; `hand` — `right` / `left`; `sound` — `1` / `0`
 - `name` — hisobotda ko‘rsatiladigan ism (foydalanuvchi uni Hisobot bo‘limida ham yozishi mumkin)
 

@@ -247,21 +247,6 @@ const channel: BroadcastChannel | null = (() => {
   }
 })()
 
-function detectLang(): Lang {
-  try {
-    const langs = navigator.languages?.length ? navigator.languages : [navigator.language]
-    for (const l of langs) {
-      const c = l.toLowerCase().slice(0, 2)
-      if (c === 'uz') return 'uz'
-      if (c === 'ru' || c === 'kk' || c === 'ky' || c === 'tg' || c === 'be' || c === 'uk') return 'ru'
-      if (c === 'en') return 'en'
-    }
-  } catch {
-    /* ignore */
-  }
-  return 'uz'
-}
-
 function prefersReducedMotion() {
   try {
     return matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -270,9 +255,10 @@ function prefersReducedMotion() {
   }
 }
 
+/** Uzbek and light unless the app's link (lang=, theme=) or the user's choice in Settings says otherwise. */
 const defaultSettings = (): Settings => ({
-  lang: detectLang(),
-  theme: 'system',
+  lang: 'uz',
+  theme: 'light',
   textSize: 'normal',
   sounds: true,
   voice: false,
