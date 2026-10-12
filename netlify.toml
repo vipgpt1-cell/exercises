@@ -6,26 +6,5 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Pages and the offline worker must always be checked for a new version.
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-# Files in /assets have a content hash in their name, so they can be cached for good.
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    # Links can carry age or a name in the URL; never pass them on to other sites.
-    Referrer-Policy = "no-referrer"
+# Caching and security headers are in public/_headers (copied into dist/), so they also
+# apply when the dist folder is uploaded by drag and drop.

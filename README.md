@@ -204,6 +204,10 @@ version shows up on the next open. In Netlify: **Add new site → Import an exis
 The site works at the root (`https://<name>.netlify.app/`) or in any sub-folder; links are the same as above
 without `/tests/`.
 
+**Without GitHub (drag and drop):** run `npm run build` (or take the `website/` folder from the zip), open
+**app.netlify.com/drop** and drop the folder. `_headers` inside it carries the caching rules. To update, open the
+site in Netlify → **Deploys** → drop the new folder there (a drop on /drop makes a new site).
+
 ---
 
 ## 2. Development
