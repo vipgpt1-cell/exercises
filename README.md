@@ -197,6 +197,13 @@ webView.evaluateJavascript("TezMedTests.importData($backupJsonFromServer)", null
 webView.evaluateJavascript("TezMedTests.clearData()", null)
 ```
 
+### Hosting on Netlify
+`netlify.toml` is ready: Netlify runs `npm run build` (Node 22) and publishes `dist/`, with caching set so a new
+version shows up on the next open. In Netlify: **Add new site → Import an existing project → GitHub →
+`vipgpt1-cell/exercises`**, keep the detected settings, **Deploy**. Every push to `main` then redeploys.
+The site works at the root (`https://<name>.netlify.app/`) or in any sub-folder; links are the same as above
+without `/tests/`.
+
 ---
 
 ## 2. Development
